@@ -1,49 +1,54 @@
 package mtscarneiro.jwtauthjava.security.filters;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import mtscarneiro.jwtauthjava.security.provider.JwtProvider;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.Date;
 
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
+    private final AuthenticationManager authenticationManager;
+    private final String jwtSecret;
+    private final long jwtExpirationTimeMillis;
 
-    private final JwtProvider jwtProvider;
-
-    public JwtAuthenticationFilter(JwtProvider jwtProvider) {
-        this.jwtProvider = jwtProvider;
-    }
-
-
-    private String getJwtFromCookies(HttpServletRequest request) {
-        Optional<Cookie> jwtCookie = Arrays.stream(Optional.ofNullable(request.getCookies()).orElse(new Cookie[]{}))
-                .filter(cookie -> "JWT".equals(cookie.getName()))
-                .findFirst();
-
-        return jwtCookie.map(Cookie::getValue).orElse(null);
+    public JwtAuthenticationFilter(AuthenticationManager authenticationManager, String jwtSecret, long jwtExpirationTimeMillis) {
+        this.authenticationManager = authenticationManager;
+        this.jwtSecret = jwtSecret;
+        this.jwtExpirationTimeMillis = jwtExpirationTimeMillis;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String jwt = getJwtFromCookies(request);
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
 
-        if (jwt != null && jwtProvider.validateToken(jwt)) {
-            Authentication authentication = jwtProvide.(jwt);
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        }
+        Authentication authenticationToken = new UsernamePasswordAuthenticationToken(username, password, new ArrayList<>());
+        return authenticationManager.authenticate(authenticationToken);
+    }
 
-        filterChain.doFilter(request, response);
+    @Override
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
+        User user = (User) authResult.getPrincipal();
+
+        String token = Jwts.builder()
+                .setSubject(user.getUsername())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationTimeMillis))
+                .signWith(SignatureAlgorithm.HS512, jwtSecret)
+                .compact();
+
+        response.addHeader("Authorization", "Bearer " + token);
     }
 }
 
