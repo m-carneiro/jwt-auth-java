@@ -26,28 +26,37 @@ git clone https://github.com/m-carneiro/jwt-auth-java.git
 ```
 
 2. Navegue até a pasta do projeto:
+
 ```bash
 cd jwt-auth-java
 ```
+
 3. Opcionalmente, compile o projeto com o Maven:
+
 ```bash
 mvn clean install
 ```
 
 ## Configuração
+
 1. Abra o arquivo `src/main/resources/application.properties` e atualize as propriedades conforme necessário. Por exemplo, você pode definir o tempo de expiração do token JWT e o algoritmo de assinatura.
 
 2. Configure sua conexão de banco de dados e outros detalhes específicos do aplicativo no arquivo `src/main/resources/application.properties`.
 
 ## Uso
+
 1. Inicie a aplicação executando a classe principal `com.example.jwtauth.JwtAuthApplication` em sua IDE ou usando o comando Maven:
+
 ```bash
 mvn spring-boot:run
 ```
+
 2. A aplicação estará disponível em `http://localhost:8080`. Utilize as rotas de autenticação e autorização fornecidas para gerenciar os tokens JWT.
 
 ## Testes
+
 1. Para executar os testes, execute o comando Maven:
+
 ```bash
 mvn test
 ```
